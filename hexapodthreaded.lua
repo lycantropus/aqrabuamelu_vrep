@@ -76,9 +76,10 @@ moveBody=function(index)
     end
     if (index==5) then
     -- adapt
-        p[3]=p[3]-0.01*sizeFactor
-        o[2]=o[2]+10*math.pi/180
-        simMoveToPosition(legBase,antBase,p,o,vel,accel)
+        --p[3]=p[3]-0.01*sizeFactor
+        o[1]=o[1]+-15*math.pi/180
+        --o[1]=o[1]+-15*math.pi/180
+        simMoveToPosition(legBase,antBase,nill,o,vel,accel)
     end
 end
 
@@ -106,10 +107,11 @@ simMoveToPosition(legBase,antBase,initialP,initialO,vel,accel)
 
 stepHeight=0.02*sizeFactor
 maxWalkingStepSize=0.11*sizeFactor
-walkingVel=0.5
+walkingVel=0.1
 
-setStepMode(walkingVel,maxWalkingStepSize*0.5,stepHeight*5  ,0,0,1)
 
+
+--footTip=simGetObjectHandle('hexa_footTip0')
 proxResult0=1
 proxResult1=1
 readFrontalSensors()
@@ -118,56 +120,57 @@ oldProxDetected0 = proxDetectedPoint0[3]
 oldProxDetected1 = proxDetectedPoint1[3]
 oldDiffR=0
 oldError=0
-initialHeight=0.1
-oldHeight=0.1
-oldP=initialP
-debug=1
+counter=0;
+reference=0.09
 
-
+moveBody(5)
 while proxResult0 == 1 or proxResult1 == 1 do
     readFrontalSensors()
     readBaseSensors()
-    print(proxResult0)
-    print(proxResult1)
+    
     if proxDetectedPoint0 ~= nil and proxDetectedPoint1 ~= nil then
-        diff0 = oldProxDetected0 - proxDetectedPoint0[3]
- 
         oldProxDetected0 = proxDetectedPoint0[3]
         oldProxDetected1 = proxDetectedPoint1[3]
     end
         
     if proxDetectedPointFR ~= nil then
-        height = proxDetectedPointFR[3]
-
-        normalVector={proxDetectedSurfaceNVFR[1], proxDetectedSurfaceNVFR[3]}
-        angle= math.atan(normalVector[2]/normalVector[1])
-       
-        error=height-initialHeight
-        diffError= error-oldError
-        Pk=1
-        Dk=0.5
-        PDcoef=Pk*error+Dk*diffError
-        value=(PDcoef*angle)
-
-        if debug == 1 then
+        --height = proxDetectedPointFR[3]
         --print ('x: ' .. proxDetectedSurfaceNVFR[1] .. ' y: ' .. proxDetectedSurfaceNVFR[2] .. ' z: ' .. proxDetectedSurfaceNVFR[3])
-        --print('detected heigth: ' .. height)
-        --print('PDcoef: ' .. PDcoef)
-        --print('angle: ' .. angle)
-        --print('value: ' .. value)
-        --print ('mudar:' .. error)
-        end
-        o={initialO[1],value,initialO[3]}   
+        normalVectorFront={proxDetectedSurfaceNVFR[1], proxDetectedSurfaceNVFR[3]}
+        normalVectorSide={proxDetectedSurfaceNVFR[2], proxDetectedSurfaceNVFR[3]}
+        normNVFront=math.sqrt((normalVectorFront[1]* normalVectorFront[1]) + (normalVectorFront[2]*normalVectorFront[2]))
+        normNVSide=math.sqrt((normalVectorSide[1]* normalVectorSide[1]) + (normalVectorSide[2]*normalVectorSide[2]))
         
-        if math.abs(value) > 0.00015 then        
+        if normNVFront > 1 then
+            normNVFront=1
+        end
+        if normNVSide > 1 then
+            normNVSide=1
+        end
+        
+        
+        angleFront= math.acos(normNVFront)
+        angleSide= math.acos(normNVSide)
+
+        Pk=1
+
+        valueFront=Pk*angleFront
+        valueSide=Pk*angleSide
+        print('value side: ' .. valueSide)
+        o={initialO[1]+0.2*angleSide,initialO[2]+valueFront,initialO[3]}
+        
         simMoveToPosition(legBase,antBase,nil,o,vel,accel)
-        end
-        
-        simMoveToPosition(legBase,antBase,initialP,nil,vel,accel)
-        oldHeight=height 
-        oldError=error  
-    end    
-    simWait(0.5)
+
+    end
+    counter=counter+1
+
+    
+    setStepMode(walkingVel,maxWalkingStepSize*0.5,stepHeight*5  ,0,0,1)
+    simWait(1)
+    
+    
+    
+    
 end
 setStepMode(walkingVel*0.0,maxWalkingStepSize*0.2,stepHeight,0,0,0)
             

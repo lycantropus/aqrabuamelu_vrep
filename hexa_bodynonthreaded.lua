@@ -20,7 +20,8 @@ if (sim_call_type==sim_childscriptcall_initialization) then
     movementStrength=1
     realMovementStrength=0
     movementDirection=0*math.pi/180
-    rotation=0    
+    rotation=0
+    simTime=simGetSimulationTime()
 end 
 
 if (sim_call_type==sim_childscriptcall_cleanup) then 
@@ -42,33 +43,37 @@ if (sim_call_type==sim_childscriptcall_actuation) then
     end
     realMovementStrength=realMovementStrength+dx
     
-    
-    for leg=1,6,1 do
-        sp=(stepProgression+(legMovementIndex[leg]-1)/6) % 1
-        offset={0,0,0}
-        if (sp<(1/3)) then
-            offset[1]=sp*3*stepAmplitude/2
-        else
-            if (sp<(1/3+1/6)) then
-                s=sp-1/3
-                offset[1]=stepAmplitude/2-stepAmplitude*s*6/2
-                offset[3]=s*6*stepHeight
+    --if simGetSimulationTime() - simTime >0.1 then
+        for leg=1,6,1 do
+            sp=(stepProgression+(legMovementIndex[leg]-1)/6) % 1
+            offset={0,0,0}
+            if (sp<(1/3)) then
+                offset[1]=sp*3*stepAmplitude/2
             else
-                if (sp<(2/3)) then
-                    s=sp-1/3-1/6
-                    offset[1]=-stepAmplitude*s*6/2
-                    offset[3]=(1-s*6)*stepHeight
+                if (sp<(1/3+1/6)) then
+                    s=sp-1/3
+                    offset[1]=stepAmplitude/2-stepAmplitude*s*6/2
+                    offset[3]=s*6*stepHeight
                 else
-                    s=sp-2/3
-                    offset[1]=-stepAmplitude*(1-s*3)/2
+                    if (sp<(2/3)) then
+                        s=sp-1/3-1/6
+                        offset[1]=-stepAmplitude*s*6/2
+                        offset[3]=(1-s*6)*stepHeight
+                    else
+                        s=sp-2/3
+                        offset[1]=-stepAmplitude*(1-s*3)/2
+                    end
                 end
             end
+            md=movementDirection+math.abs(rotation)*math.atan2(initialPos[leg][1]*rotation,-initialPos[leg][2]*rotation)
+            offset2={offset[1]*math.cos(md)*realMovementStrength,offset[1]*math.sin(md)*realMovementStrength,offset[3]*realMovementStrength}
+            p={initialPos[leg][1]+offset2[1],initialPos[leg][2]+offset2[2],initialPos[leg][3]+offset2[3]}
+        
+            simSetObjectPosition(legTargets[leg],antBase,p) -- mover para coordenada calculada
+            simTime = simGetSimulationTime()
         end
-        md=movementDirection+math.abs(rotation)*math.atan2(initialPos[leg][1]*rotation,-initialPos[leg][2]*rotation)
-        offset2={offset[1]*math.cos(md)*realMovementStrength,offset[1]*math.sin(md)*realMovementStrength,offset[3]*realMovementStrength}
-        p={initialPos[leg][1]+offset2[1],initialPos[leg][2]+offset2[2],initialPos[leg][3]+offset2[3]}
-        simSetObjectPosition(legTargets[leg],antBase,p) 
-    end
-    
+    --else
+    --print('ainda nao')
+    --end
     stepProgression=stepProgression+dt*stepVelocity
 end 
